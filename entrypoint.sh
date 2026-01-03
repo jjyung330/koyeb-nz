@@ -1,18 +1,26 @@
 #!/bin/sh
 
-# 1. 启动伪装 Web 服务器 (应付 Koyeb)
+# 1. 启动伪装 Web 服务器
+# ---------------------------------------------------
 mkdir -p /www
 echo "Nezha Agent V1 is running..." > /www/index.html
-httpd -p ${PORT:-8000} -h /www
+
+# [关键修改] 使用 busybox httpd，防止找不到命令
+busybox httpd -p ${PORT:-8000} -h /www
+
 echo "Fake Web Server started on port ${PORT:-8000}"
 
+
 # 2. 检查必要变量
+# ---------------------------------------------------
 if [ -z "$NZ_KEY" ]; then
     echo "Error: NZ_KEY (Client Secret) is missing!"
     exit 1
 fi
 
+
 # 3. 生成 V1 配置文件 (config.yml)
+# ---------------------------------------------------
 echo "Generating V1 config.yml..."
 
 # 处理 TLS (HTTPS)
@@ -22,8 +30,7 @@ if [ "$NZ_TLS" = "1" ] || [ "$NZ_TLS" = "true" ]; then
 fi
 
 # 生成配置文件
-# 注意：这里同时写入了 client_secret 和 uuid
-# 如果你没有在环境变量提供 UUID，脚本会自动生成一个，保证固定
+# 优先使用环境变量 UUID，如果没有则自动生成一个
 MY_UUID="${UUID:-$(cat /proc/sys/kernel/random/uuid)}"
 
 cat > /dashboard/config.yml <<EOF
@@ -40,6 +47,8 @@ EOF
 
 echo "Config generated with UUID: ${MY_UUID}"
 
+
 # 4. 启动 Agent
+# ---------------------------------------------------
 echo "Starting Nezha Agent V1..."
 /dashboard/nezha-agent -c /dashboard/config.yml
