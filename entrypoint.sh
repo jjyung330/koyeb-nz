@@ -1,12 +1,13 @@
 #!/bin/sh
 
-# 1. 启动伪装 Web 服务器
+# 1. 启动伪装 Web 服务器 (使用 Python3)
 # ---------------------------------------------------
 mkdir -p /www
 echo "Nezha Agent V1 is running..." > /www/index.html
 
-# [关键修改] 使用 busybox httpd，防止找不到命令
-busybox httpd -p ${PORT:-8000} -h /www
+# [修改点] 使用 python3 启动服务器，并放入后台 (&)
+# --directory 指定目录，PORT 指定端口
+nohup python3 -m http.server --directory /www ${PORT:-8000} >/dev/null 2>&1 &
 
 echo "Fake Web Server started on port ${PORT:-8000}"
 
@@ -23,16 +24,16 @@ fi
 # ---------------------------------------------------
 echo "Generating V1 config.yml..."
 
-# 处理 TLS (HTTPS)
+# TLS 判断
 TLS_BOOL="false"
 if [ "$NZ_TLS" = "1" ] || [ "$NZ_TLS" = "true" ]; then
     TLS_BOOL="true"
 fi
 
-# 生成配置文件
-# 优先使用环境变量 UUID，如果没有则自动生成一个
+# UUID 判断
 MY_UUID="${UUID:-$(cat /proc/sys/kernel/random/uuid)}"
 
+# 写入配置
 cat > /dashboard/config.yml <<EOF
 server: ${NZ_SERVER}:${NZ_PORT}
 client_secret: ${NZ_KEY}
